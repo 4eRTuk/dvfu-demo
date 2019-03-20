@@ -22,8 +22,34 @@
 package com.nextgis.dvfudemo
 
 import com.nextgis.maplibui.GISApplication
+import com.nextgis.maplib.util.GeoConstants
+import com.nextgis.maplib.util.GeoConstants.TMSTYPE_OSM
+import com.nextgis.maplibui.mapui.RemoteTMSLayerUI
+import com.nextgis.maplibui.util.SettingsConstantsUI
+
 
 class DVFUApplication : GISApplication() {
+    override fun onCreate() {
+        super.onCreate()
+        initBaseLayers()
+    }
+
+    private fun initBaseLayers() {
+        if (mMap.getLayerByPathName(OSM) == null) {
+            // add OpenStreetMap layer
+            val layer = RemoteTMSLayerUI(applicationContext, mMap.createLayerStorage(OSM))
+            layer.name = "OSM"
+            layer.url = SettingsConstantsUI.OSM_URL
+            layer.tmsType = TMSTYPE_OSM
+            layer.isVisible = true
+            layer.minZoom = GeoConstants.DEFAULT_MIN_ZOOM.toFloat()
+            layer.maxZoom = 19f
+
+            mMap.addLayer(layer)
+            mMap.moveLayer(0, layer)
+        }
+    }
+
     override fun getAuthority(): String {
         return AUTHORITY
     }
@@ -47,5 +73,6 @@ class DVFUApplication : GISApplication() {
     companion object {
         const val ACCOUNT_TYPE = "dvfu_account"
         const val AUTHORITY = "com.nextgis.dvfudemo.provider"
+        const val OSM = "osm_layer"
     }
 }
