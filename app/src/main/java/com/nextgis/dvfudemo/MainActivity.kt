@@ -22,6 +22,7 @@
 package com.nextgis.dvfudemo
 
 import android.content.Intent
+import android.content.SharedPreferences
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.preference.PreferenceManager
@@ -43,24 +44,26 @@ import com.nextgis.maplibui.api.MapViewEventListener
 import com.nextgis.maplibui.mapui.MapViewOverlays
 import com.nextgis.maplibui.mapui.NGWVectorLayerUI
 import com.nextgis.maplibui.util.ConstantsUI
+import com.nextgis.maplibui.util.SettingsConstantsUI
 
 
 class MainActivity : AppCompatActivity(), MapViewEventListener {
     private var map: MapViewOverlays? = null
     private lateinit var overlay: SelectFeatureOverlay
+    private var preferences: SharedPreferences? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val preferences = PreferenceManager.getDefaultSharedPreferences(this)
-        val signed = preferences.getBoolean("signed", false)
+        preferences = PreferenceManager.getDefaultSharedPreferences(this)
+        val signed = preferences!!.getBoolean("signed", false)
         if (!signed) {
             signin()
             return
         }
 
-        val authorized = preferences.getBoolean("authorized", false)
+        val authorized = preferences!!.getBoolean("authorized", false)
         val app = application as? IGISApplication
         map = MapViewOverlays(this, app?.map as MapDrawable?)
         map?.id = R.id.map
@@ -69,6 +72,7 @@ class MainActivity : AppCompatActivity(), MapViewEventListener {
 
         val container = findViewById<FrameLayout>(R.id.map)
         container.addView(map)
+        setCenter()
 
         findViewById<ImageButton>(R.id.close).setOnClickListener {
             findViewById<View>(R.id.info).visibility = View.GONE
@@ -80,6 +84,25 @@ class MainActivity : AppCompatActivity(), MapViewEventListener {
         super.onDestroy()
         val container = findViewById<FrameLayout>(R.id.map)
         container.removeView(map)
+    }
+
+    private fun setCenter() {
+        map?.let {
+            val mapZoom = preferences?.getFloat(SettingsConstantsUI.KEY_PREF_ZOOM_LEVEL, it.minZoom)
+            var mapScrollX: Double
+            var mapScrollY: Double
+            try {
+                val x = preferences?.getLong(SettingsConstantsUI.KEY_PREF_SCROLL_X, 0)
+                val y = preferences?.getLong(SettingsConstantsUI.KEY_PREF_SCROLL_Y, 0)
+                mapScrollX = java.lang.Double.longBitsToDouble(x ?: 0)
+                mapScrollY = java.lang.Double.longBitsToDouble(y ?: 0)
+            } catch (e: ClassCastException) {
+                mapScrollX = 0.0
+                mapScrollY = 0.0
+            }
+
+            it.setZoomAndCenter(mapZoom ?: it.minZoom, GeoPoint(mapScrollX, mapScrollY))
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
@@ -132,7 +155,14 @@ class MainActivity : AppCompatActivity(), MapViewEventListener {
 
     override fun onStop() {
         super.onStop()
-        map?.removeListener(this)
+        map?.let {
+            it.removeListener(this)
+            val point = it.mapCenter
+            preferences?.edit()?.putFloat(SettingsConstantsUI.KEY_PREF_ZOOM_LEVEL, it.zoomLevel)
+                ?.putLong(SettingsConstantsUI.KEY_PREF_SCROLL_X, java.lang.Double.doubleToRawLongBits(point.x))
+                ?.putLong(SettingsConstantsUI.KEY_PREF_SCROLL_Y, java.lang.Double.doubleToRawLongBits(point.y))
+                ?.apply()
+        }
     }
 
     override fun onLayersReordered() {
