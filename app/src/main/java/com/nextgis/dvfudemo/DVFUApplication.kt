@@ -34,7 +34,7 @@ class DVFUApplication : GISApplication() {
         initBaseLayers()
     }
 
-    private fun initBaseLayers() {
+    fun initBaseLayers() {
         if (mMap.getLayerByPathName(OSM) == null) {
             // add OpenStreetMap layer
             val layer = RemoteTMSLayerUI(applicationContext, mMap.createLayerStorage(OSM))

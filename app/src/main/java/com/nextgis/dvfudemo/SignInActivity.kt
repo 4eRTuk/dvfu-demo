@@ -23,21 +23,30 @@ package com.nextgis.dvfudemo
 
 import android.Manifest
 import android.app.ProgressDialog
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Bundle
 import android.preference.PreferenceManager
 import android.support.v4.app.ActivityCompat
+import android.support.v4.content.ContextCompat
 import android.support.v7.app.AppCompatActivity
 import android.widget.Button
 import android.widget.Toast
 import com.nextgis.maplib.api.IGISApplication
+import com.nextgis.maplib.map.MapDrawable
 import com.nextgis.maplib.util.Constants
 import com.nextgis.maplib.util.PermissionUtil
+import com.nextgis.maplibui.service.LayerFillService
 
 class SignInActivity : AppCompatActivity() {
+    private var receiver: BroadcastReceiver? = null
     private var dialog: ProgressDialog? = null
     private var authorized = false
+    private var total = LAYERS.size
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -90,8 +99,58 @@ class SignInActivity : AppCompatActivity() {
                 dialog?.dismiss()
                 return
             } else {
-                signin()
+                layers()
             }
+        }
+    }
+
+    private fun clear() {
+        val app = application as? DVFUApplication
+        (app?.map as MapDrawable).delete()
+        app.initBaseLayers()
+    }
+
+    private fun layers() {
+        receiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context, intent: Intent) {
+                if (intent.action?.equals(LayerFillService.ACTION_STOP) == true) {
+                    Toast.makeText(this@SignInActivity, R.string.canceled, Toast.LENGTH_SHORT).show()
+                    clear()
+                    return
+                }
+
+                val serviceStatus = intent.getShortExtra(LayerFillService.KEY_STATUS, 0)
+                when (serviceStatus) {
+                    LayerFillService.STATUS_STOP -> {
+                        total--
+                        if (total <= 0)
+                            signin()
+                    }
+                }
+            }
+        }
+
+        val intentFilter = IntentFilter(LayerFillService.ACTION_UPDATE)
+        intentFilter.addAction(LayerFillService.ACTION_STOP)
+        registerReceiver(receiver, intentFilter)
+
+        val intent = Intent(this, LayerFillService::class.java)
+        intent.action = LayerFillService.ACTION_ADD_TASK
+
+        val app = application as? IGISApplication
+        val map = app?.map as MapDrawable?
+        val accountName = MainActivity.AUTHORITY
+
+        for (layer in LAYERS) {
+            val uri = Uri.parse(Uri.decode(layer.first))
+            val id = uri.lastPathSegment?.toLongOrNull()
+            intent.putExtra(LayerFillService.KEY_REMOTE_ID, id)
+            intent.putExtra(LayerFillService.KEY_ACCOUNT, accountName)
+            intent.putExtra(LayerFillService.KEY_NAME, layer.second)
+            intent.putExtra(LayerFillService.KEY_LAYER_GROUP_ID, map?.id)
+            intent.putExtra(LayerFillService.KEY_INPUT_TYPE, LayerFillService.NGW_LAYER)
+            intent.putExtra(LayerFillService.KEY_URI, uri)
+            ContextCompat.startForegroundService(this, intent)
         }
     }
 
@@ -105,6 +164,11 @@ class SignInActivity : AppCompatActivity() {
     }
 
     companion object {
+        val LAYERS = arrayListOf(
+            Pair("http://dvfu-demo.nextgis.com/resource/4", "Магазины"),
+            Pair("http://dvfu-demo.nextgis.com/resource/5", "Вендинговые автоматы"),
+            Pair("http://dvfu-demo.nextgis.com/resource/6", "Кафе и рестораны")
+        )
         const val PERMISSIONS_CODE = 47
     }
 }
