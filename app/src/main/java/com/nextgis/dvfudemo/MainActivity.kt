@@ -23,6 +23,9 @@ package com.nextgis.dvfudemo
 
 import android.content.Intent
 import android.content.SharedPreferences
+import android.content.res.ColorStateList
+import android.graphics.Color
+import android.os.Build
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.preference.PreferenceManager
@@ -33,6 +36,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.widget.FrameLayout
 import android.widget.ImageButton
+import android.widget.ImageView
 import android.widget.TextView
 import com.nextgis.maplib.api.IGISApplication
 import com.nextgis.maplib.api.ILayerView
@@ -222,6 +226,20 @@ class MainActivity : AppCompatActivity(), MapViewEventListener {
                                 return
                             }
                             it.geometry?.let { overlay.feature = feature }
+
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                                val cat = feature.getFieldValueAsInteger("category_id")
+                                if (cat == 1) {
+                                    findViewById<ImageView>(R.id.avatar).imageTintList = ColorStateList.valueOf(Color.CYAN)
+                                } else if (cat == 2) {
+                                    findViewById<ImageView>(R.id.avatar).imageTintList = ColorStateList.valueOf(Color.GREEN)
+                                } else if (cat == 3) {
+                                    findViewById<ImageView>(R.id.avatar).imageTintList = ColorStateList.valueOf(Color.RED)
+                                } else {
+                                    findViewById<ImageView>(R.id.avatar).imageTintList = ColorStateList.valueOf(Color.MAGENTA)
+                                }
+                            }
+
                             findViewById<View>(R.id.people).visibility = View.GONE
                             findViewById<TextView>(R.id.title).text = feature.getFieldValueAsString("title")
                             findViewById<TextView>(R.id.category).text = feature.getFieldValueAsString("category")
