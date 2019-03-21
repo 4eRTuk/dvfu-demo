@@ -26,7 +26,9 @@ import android.support.design.widget.BottomSheetDialog
 import android.support.design.widget.FloatingActionButton
 import android.support.v7.app.AppCompatActivity
 import android.widget.TextView
-
+import com.nextgis.maplib.api.IGISApplication
+import com.nextgis.maplib.map.MapDrawable
+import com.nextgis.maplib.map.VectorLayer
 
 
 class CafeActivity : AppCompatActivity() {
@@ -34,6 +36,19 @@ class CafeActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_cafe)
+
+        val layerId = intent.getIntExtra("layer_id", -1)
+        val featureId = intent.getLongExtra("feature_id", -1)
+        val app = application as? IGISApplication
+        ((app?.map as MapDrawable?)?.getLayerById(layerId) as? VectorLayer)?.let {
+            it.getFeature(featureId)?.let {  feature ->
+                title = feature.getFieldValueAsString("title")
+                supportActionBar?.subtitle = feature.getFieldValueAsString("category")
+                findViewById<TextView>(R.id.description).text = feature.getFieldValueAsString("description")
+                findViewById<TextView>(R.id.menu).text = feature.getFieldValueAsString("menu")
+            }
+        }
+
         findViewById<FloatingActionButton>(R.id.fab).setOnClickListener { dialog() }
     }
 

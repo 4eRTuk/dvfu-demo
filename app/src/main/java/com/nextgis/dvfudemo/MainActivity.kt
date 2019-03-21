@@ -33,6 +33,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.widget.FrameLayout
 import android.widget.ImageButton
+import android.widget.TextView
 import com.nextgis.maplib.api.IGISApplication
 import com.nextgis.maplib.api.ILayerView
 import com.nextgis.maplib.datasource.GeoEnvelope
@@ -117,6 +118,7 @@ class MainActivity : AppCompatActivity(), MapViewEventListener {
                 preferences.edit().remove("signed").remove("authorized").apply()
                 val app = application as? IGISApplication
                 app?.getAccount(AUTHORITY)?.let { app.removeAccount(it) }
+                (app?.map as MapDrawable).delete()
                 signin()
                 true
             }
@@ -200,7 +202,17 @@ class MainActivity : AppCompatActivity(), MapViewEventListener {
                 selectedLayer?.let {
                     for (i in items!!.indices) {
                         val feature = selectedLayer.getFeature(items[i])
-                        feature?.geometry?.let { overlay.feature = feature }
+                        feature?.let {
+                            if (selectedLayer.name == SignInActivity.LAYERS[2].second) {
+                                openCafe(selectedLayer.id, feature.id)
+                                return
+                            }
+                            it.geometry?.let { overlay.feature = feature }
+                            findViewById<View>(R.id.people).visibility = View.GONE
+                            findViewById<TextView>(R.id.title).text = feature.getFieldValueAsString("title")
+                            findViewById<TextView>(R.id.category).text = feature.getFieldValueAsString("category")
+                            findViewById<TextView>(R.id.description).text = feature.getFieldValueAsString("description")
+                        }
                     }
 
                     overlay.feature?.let {
@@ -211,8 +223,10 @@ class MainActivity : AppCompatActivity(), MapViewEventListener {
         }
     }
 
-    private fun openCafe() {
+    private fun openCafe(layerId: Int, featureId: Long) {
         val intent = Intent(this, CafeActivity::class.java)
+        intent.putExtra("layer_id", layerId)
+        intent.putExtra("feature_id", featureId)
         startActivity(intent)
     }
 
