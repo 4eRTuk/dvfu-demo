@@ -73,6 +73,8 @@ class MainActivity : AppCompatActivity() {
             R.id.action_signout -> {
                 val preferences = PreferenceManager.getDefaultSharedPreferences(this)
                 preferences.edit().remove("signed").remove("authorized").apply()
+                val app = application as? IGISApplication
+                app?.getAccount(AUTHORITY)?.let { app.removeAccount(it) }
                 signin()
                 true
             }
@@ -84,5 +86,10 @@ class MainActivity : AppCompatActivity() {
         val intent = Intent(this, SignInActivity::class.java)
         startActivity(intent)
         finish()
+    }
+
+    companion object {
+        const val AUTHORITY = "dvfu-demo.nextgis.com"
+        const val FULL_URL = "http://$AUTHORITY"
     }
 }

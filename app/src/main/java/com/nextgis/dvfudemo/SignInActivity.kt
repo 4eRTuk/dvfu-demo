@@ -21,23 +21,51 @@
 
 package com.nextgis.dvfudemo
 
+import android.app.ProgressDialog
 import android.content.Intent
 import android.os.Bundle
 import android.preference.PreferenceManager
 import android.support.v7.app.AppCompatActivity
 import android.widget.Button
+import android.widget.Toast
+import com.nextgis.maplib.api.IGISApplication
+import com.nextgis.maplib.util.Constants
 
 class SignInActivity : AppCompatActivity() {
+    private var dialog: ProgressDialog? = null
+    private var authorized = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_signin)
 
-        findViewById<Button>(R.id.skip).setOnClickListener { signin() }
-        findViewById<Button>(R.id.signin).setOnClickListener { signin(true) }
+        findViewById<Button>(R.id.skip).setOnClickListener { load() }
+        findViewById<Button>(R.id.signin).setOnClickListener { load(true) }
     }
 
-    private fun signin(authorized: Boolean = false) {
+    private fun load(authorized: Boolean = false) {
+        this.authorized = authorized
+        dialog = ProgressDialog(this)
+        dialog?.isIndeterminate = true
+        dialog?.setCancelable(false)
+        dialog?.setMessage(getString(R.string.message_loading))
+        dialog?.show()
+
+        val fullUrl = MainActivity.FULL_URL
+        val accountName = MainActivity.AUTHORITY
+        val app = application as? IGISApplication
+        app?.addAccount(accountName, fullUrl, Constants.NGW_ACCOUNT_GUEST, null, "ngw")?.let {
+            if (!it) {
+                Toast.makeText(this, R.string.error_auth, Toast.LENGTH_SHORT).show()
+                dialog?.dismiss()
+                return
+            } else {
+                signin()
+            }
+        }
+    }
+
+    private fun signin() {
         val preferences = PreferenceManager.getDefaultSharedPreferences(this)
         preferences.edit().putBoolean("authorized", authorized).apply()
         preferences.edit().putBoolean("signed", true).apply()
