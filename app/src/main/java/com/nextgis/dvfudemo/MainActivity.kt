@@ -40,6 +40,7 @@ import com.nextgis.maplib.datasource.GeoEnvelope
 import com.nextgis.maplib.datasource.GeoPoint
 import com.nextgis.maplib.map.Layer
 import com.nextgis.maplib.map.MapDrawable
+import com.nextgis.maplib.map.VectorLayer
 import com.nextgis.maplib.util.GeoConstants
 import com.nextgis.maplibui.api.MapViewEventListener
 import com.nextgis.maplibui.mapui.MapViewOverlays
@@ -52,6 +53,7 @@ class MainActivity : AppCompatActivity(), MapViewEventListener {
     private var map: MapViewOverlays? = null
     private lateinit var overlay: SelectFeatureOverlay
     private var preferences: SharedPreferences? = null
+    private var authorized = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -64,12 +66,17 @@ class MainActivity : AppCompatActivity(), MapViewEventListener {
             return
         }
 
-        val authorized = preferences!!.getBoolean("authorized", false)
+        authorized = preferences!!.getBoolean("authorized", false)
         val app = application as? IGISApplication
         map = MapViewOverlays(this, app?.map as MapDrawable?)
         map?.id = R.id.map
         overlay = SelectFeatureOverlay(this, map!!)
         map?.addOverlay(overlay)
+        if (!authorized) {
+            (map?.map?.getLayerByName(SignInActivity.LAYERS[2].second) as? VectorLayer)?.let {
+                it.isVisible = false
+            }
+        }
 
         val container = findViewById<FrameLayout>(R.id.map)
         container.addView(map)
@@ -129,15 +136,22 @@ class MainActivity : AppCompatActivity(), MapViewEventListener {
                 val checked = BooleanArray(layers.size)
                 (map?.getLayerByName(SignInActivity.LAYERS[0].second) as Layer).let { checked[0] = it.isVisible }
                 (map.getLayerByName(SignInActivity.LAYERS[2].second) as Layer).let { checked[1] = it.isVisible }
-                val dialog = AlertDialog.Builder(this)
-                dialog.setTitle(R.string.track_list)
+                val builder = AlertDialog.Builder(this)
+                builder.setTitle(R.string.track_list)
                     .setMultiChoiceItems(layers, checked) { _, which, selected -> checked[which] = selected }
                     .setPositiveButton(R.string.ok) { _, _ ->
                         (map.getLayerByName(SignInActivity.LAYERS[0].second) as Layer).let { it.isVisible = checked[0] }
                         (map.getLayerByName(SignInActivity.LAYERS[1].second) as Layer).let { it.isVisible = checked[0] }
                         (map.getLayerByName(SignInActivity.LAYERS[2].second) as Layer).let { it.isVisible = checked[1] }
                     }
-                    .create().show()
+                if (!authorized) {
+                    builder.setNegativeButton("Войти", null)
+                }
+                val dialog = builder.create()
+                dialog.show()
+                if (!authorized) {
+                    dialog.listView.isEnabled = false
+                }
                 true
             }
             else -> super.onOptionsItemSelected(item)
