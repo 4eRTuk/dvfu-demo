@@ -1,4 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ Project:  Demo DVFU
+  ~ Purpose:  NextGIS demo project for DVFU
+  ~ Author:   Stanislav Petriakov, becomeglory@gmail.com
+  ~ *****************************************************************************
+  ~ Copyright (c) 2019 NextGIS, info@nextgis.com
+  ~
+  ~ This program is free software: you can redistribute it and/or modify
+  ~ it under the terms of the GNU General Public License as published by
+  ~ the Free Software Foundation, either version 3 of the License, or
+  ~ (at your option) any later version.
+  ~
+  ~ This program is distributed in the hope that it will be useful,
+  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~ GNU General Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU General Public License
+  ~ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  -->
+
 <android.support.constraint.ConstraintLayout
         xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:tools="http://schemas.android.com/tools"
@@ -8,7 +29,86 @@
         tools:context=".MainActivity">
 
     <FrameLayout
+            android:id="@+id/map"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:id="@+id/map"/>
+            tools:background="@drawable/bk_tile"/>
+
+    <android.support.constraint.ConstraintLayout
+            android:id="@+id/info"
+            app:layout_constraintBottom_toBottomOf="parent"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/color_white"
+            android:visibility="gone">
+
+        <ImageButton
+                android:id="@+id/close"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="16dp"
+                tools:ignore="ContentDescription"
+                android:background="@null"
+                android:src="@drawable/ic_action_cancel_light"/>
+
+        <ImageView
+                android:id="@+id/avatar"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_margin="16dp"
+                android:tint="@color/colorPrimaryDark"
+                android:src="@drawable/circle"
+                tools:ignore="ContentDescription"/>
+
+        <TextView
+                android:id="@+id/title"
+                tools:text="Shop #1"
+                app:layout_constraintStart_toEndOf="@id/avatar"
+                app:layout_constraintTop_toTopOf="parent"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginLeft="16dp"
+                android:layout_marginTop="16dp"
+                android:textColor="@color/color_black"
+                style="@style/TextAppearance.AppCompat.Medium"/>
+
+        <TextView
+                android:id="@+id/category"
+                tools:text="Fastfood"
+                app:layout_constraintStart_toEndOf="@id/avatar"
+                app:layout_constraintTop_toBottomOf="@id/title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginLeft="16dp"
+                style="@style/TextAppearance.AppCompat.Small"/>
+
+        <TextView
+                android:id="@+id/description"
+                tools:text="Lorem ipsum In publishing and graphic design, lorem ipsum is a placeholder text commonly used to demonstrate the visual form of a document without relying on meaningful content. Replacing the actual content with placeholder text allows designers to design the form of the content before the content itself has been produced."
+                app:layout_constraintTop_toBottomOf="@id/avatar"
+                android:layout_marginTop="16dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="16dp"
+                android:background="@color/colorAccent"
+                style="@style/TextAppearance.AppCompat.Medium"/>
+
+        <ProgressBar
+                android:id="@+id/people"
+                app:layout_constraintTop_toBottomOf="@id/description"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="16dp"
+                android:indeterminate="false"
+                android:progress="50"
+                android:max="100"
+                android:background="@color/colorAccent"
+                style="@style/Widget.AppCompat.ProgressBar.Horizontal"/>
+    </android.support.constraint.ConstraintLayout>
 </android.support.constraint.ConstraintLayout>

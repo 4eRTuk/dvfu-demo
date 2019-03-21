@@ -29,6 +29,7 @@ import android.support.v7.app.AlertDialog
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.FrameLayout
+import android.widget.ImageButton
 import com.nextgis.maplib.api.IGISApplication
 import com.nextgis.maplib.map.Layer
 import com.nextgis.maplib.map.MapDrawable
@@ -56,6 +57,11 @@ class MainActivity : AppCompatActivity() {
 
         val container = findViewById<FrameLayout>(R.id.map)
         container.addView(map)
+
+        findViewById<ImageButton>(R.id.close).setOnClickListener {
+            val intent = Intent(this, CafeActivity::class.java)
+            startActivity(intent)
+        }
     }
 
     override fun onDestroy() {

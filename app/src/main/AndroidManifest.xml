@@ -53,6 +53,9 @@
         <activity android:name=".SignInActivity"
                   android:theme="@style/NoActonBar"/>
 
+        <activity android:name=".CafeActivity"
+                  android:parentActivityName=".MainActivity"/>
+
         <service
                 android:name="com.nextgis.maplibui.account.NGWAuthenticatorService"
                 android:enabled="true"
