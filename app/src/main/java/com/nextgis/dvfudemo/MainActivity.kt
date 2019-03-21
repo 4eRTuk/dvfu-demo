@@ -25,13 +25,14 @@ import android.content.Intent
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.preference.PreferenceManager
+import android.support.v7.app.AlertDialog
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.FrameLayout
 import com.nextgis.maplib.api.IGISApplication
+import com.nextgis.maplib.map.Layer
 import com.nextgis.maplib.map.MapDrawable
 import com.nextgis.maplibui.mapui.MapViewOverlays
-
 
 
 class MainActivity : AppCompatActivity() {
@@ -69,13 +70,31 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onOptionsItemSelected(item: MenuItem?): Boolean {
-        return when(item?.itemId) {
+        return when (item?.itemId) {
             R.id.action_signout -> {
                 val preferences = PreferenceManager.getDefaultSharedPreferences(this)
                 preferences.edit().remove("signed").remove("authorized").apply()
                 val app = application as? IGISApplication
                 app?.getAccount(AUTHORITY)?.let { app.removeAccount(it) }
                 signin()
+                true
+            }
+            R.id.action_layers -> {
+                val app = application as? IGISApplication
+                val map = app?.map as MapDrawable?
+                val layers = arrayOf("Магазины и автоматы", "Кафе и рестораны")
+                val checked = BooleanArray(layers.size)
+                (map?.getLayerByName(SignInActivity.LAYERS[0].second) as Layer).let { checked[0] = it.isVisible }
+                (map.getLayerByName(SignInActivity.LAYERS[2].second) as Layer).let { checked[1] = it.isVisible }
+                val dialog = AlertDialog.Builder(this)
+                dialog.setTitle(R.string.track_list)
+                    .setMultiChoiceItems(layers, checked) { _, which, selected -> checked[which] = selected }
+                    .setPositiveButton(R.string.ok) { _, _ ->
+                        (map.getLayerByName(SignInActivity.LAYERS[0].second) as Layer).let { it.isVisible = checked[0] }
+                        (map.getLayerByName(SignInActivity.LAYERS[1].second) as Layer).let { it.isVisible = checked[0] }
+                        (map.getLayerByName(SignInActivity.LAYERS[2].second) as Layer).let { it.isVisible = checked[1] }
+                    }
+                    .create().show()
                 true
             }
             else -> super.onOptionsItemSelected(item)
