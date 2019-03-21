@@ -21,15 +21,19 @@
 
 package com.nextgis.dvfudemo
 
+import android.Manifest
 import android.app.ProgressDialog
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.preference.PreferenceManager
+import android.support.v4.app.ActivityCompat
 import android.support.v7.app.AppCompatActivity
 import android.widget.Button
 import android.widget.Toast
 import com.nextgis.maplib.api.IGISApplication
 import com.nextgis.maplib.util.Constants
+import com.nextgis.maplib.util.PermissionUtil
 
 class SignInActivity : AppCompatActivity() {
     private var dialog: ProgressDialog? = null
@@ -43,8 +47,33 @@ class SignInActivity : AppCompatActivity() {
         findViewById<Button>(R.id.signin).setOnClickListener { load(true) }
     }
 
+    private fun requestPermission() {
+        val permissions = arrayOf(Manifest.permission.GET_ACCOUNTS, Manifest.permission.WRITE_SYNC_SETTINGS)
+        ActivityCompat.requestPermissions(this, permissions, PERMISSIONS_CODE)
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+
+        var granted = requestCode == PERMISSIONS_CODE
+        for (result in grantResults)
+            if (result != PackageManager.PERMISSION_GRANTED)
+                granted = false
+
+        if (granted)
+            load(authorized)
+        else
+            Toast.makeText(this, R.string.error_auth, Toast.LENGTH_SHORT).show()
+    }
+
     private fun load(authorized: Boolean = false) {
         this.authorized = authorized
+        if (!PermissionUtil.hasPermission(this, Manifest.permission.WRITE_SYNC_SETTINGS)
+            || !PermissionUtil.hasPermission(this, Manifest.permission.GET_ACCOUNTS)) {
+            requestPermission()
+            return
+        }
+
         dialog = ProgressDialog(this)
         dialog?.isIndeterminate = true
         dialog?.setCancelable(false)
@@ -57,6 +86,7 @@ class SignInActivity : AppCompatActivity() {
         app?.addAccount(accountName, fullUrl, Constants.NGW_ACCOUNT_GUEST, null, "ngw")?.let {
             if (!it) {
                 Toast.makeText(this, R.string.error_auth, Toast.LENGTH_SHORT).show()
+                app.getAccount(accountName)?.let { app.removeAccount(it) }
                 dialog?.dismiss()
                 return
             } else {
@@ -72,5 +102,9 @@ class SignInActivity : AppCompatActivity() {
         val intent = Intent(this, MainActivity::class.java)
         startActivity(intent)
         finish()
+    }
+
+    companion object {
+        const val PERMISSIONS_CODE = 47
     }
 }
