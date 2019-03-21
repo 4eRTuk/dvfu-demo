@@ -21,8 +21,12 @@
 
 package com.nextgis.dvfudemo
 
+import android.content.Intent
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
+import android.preference.PreferenceManager
+import android.view.Menu
+import android.view.MenuItem
 import android.widget.FrameLayout
 import com.nextgis.maplib.api.IGISApplication
 import com.nextgis.maplib.map.MapDrawable
@@ -37,6 +41,14 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        val preferences = PreferenceManager.getDefaultSharedPreferences(this)
+        val signed = preferences.getBoolean("signed", false)
+        if (!signed) {
+            signin()
+            return
+        }
+
+        val authorized = preferences.getBoolean("authorized", false)
         val app = application as? IGISApplication
         map = MapViewOverlays(this, app?.map as MapDrawable?)
         map?.id = R.id.map
@@ -49,5 +61,28 @@ class MainActivity : AppCompatActivity() {
         super.onDestroy()
         val container = findViewById<FrameLayout>(R.id.map)
         container.removeView(map)
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(R.menu.menu_main, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem?): Boolean {
+        return when(item?.itemId) {
+            R.id.action_signout -> {
+                val preferences = PreferenceManager.getDefaultSharedPreferences(this)
+                preferences.edit().remove("signed").remove("authorized").apply()
+                signin()
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
+    }
+
+    private fun signin() {
+        val intent = Intent(this, SignInActivity::class.java)
+        startActivity(intent)
+        finish()
     }
 }

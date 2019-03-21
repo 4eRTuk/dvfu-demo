@@ -44,6 +44,8 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <activity android:name=".SignInActivity"
+        android:theme="@style/NoActonBar"/>
     </application>
 
 </manifest>
