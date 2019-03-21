@@ -28,16 +28,26 @@ import android.preference.PreferenceManager
 import android.support.v7.app.AlertDialog
 import android.view.Menu
 import android.view.MenuItem
+import android.view.MotionEvent
+import android.view.View
 import android.widget.FrameLayout
 import android.widget.ImageButton
 import com.nextgis.maplib.api.IGISApplication
+import com.nextgis.maplib.api.ILayerView
+import com.nextgis.maplib.datasource.GeoEnvelope
+import com.nextgis.maplib.datasource.GeoPoint
 import com.nextgis.maplib.map.Layer
 import com.nextgis.maplib.map.MapDrawable
+import com.nextgis.maplib.util.GeoConstants
+import com.nextgis.maplibui.api.MapViewEventListener
 import com.nextgis.maplibui.mapui.MapViewOverlays
+import com.nextgis.maplibui.mapui.NGWVectorLayerUI
+import com.nextgis.maplibui.util.ConstantsUI
 
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), MapViewEventListener {
     private var map: MapViewOverlays? = null
+    private lateinit var overlay: SelectFeatureOverlay
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -54,13 +64,15 @@ class MainActivity : AppCompatActivity() {
         val app = application as? IGISApplication
         map = MapViewOverlays(this, app?.map as MapDrawable?)
         map?.id = R.id.map
+        overlay = SelectFeatureOverlay(this, map!!)
+        map?.addOverlay(overlay)
 
         val container = findViewById<FrameLayout>(R.id.map)
         container.addView(map)
 
         findViewById<ImageButton>(R.id.close).setOnClickListener {
-            val intent = Intent(this, CafeActivity::class.java)
-            startActivity(intent)
+            findViewById<View>(R.id.info).visibility = View.GONE
+            overlay.feature = null
         }
     }
 
@@ -111,6 +123,103 @@ class MainActivity : AppCompatActivity() {
         val intent = Intent(this, SignInActivity::class.java)
         startActivity(intent)
         finish()
+    }
+
+    override fun onStart() {
+        super.onStart()
+        map?.addListener(this)
+    }
+
+    override fun onStop() {
+        super.onStop()
+        map?.removeListener(this)
+    }
+
+    override fun onLayersReordered() {
+        
+    }
+
+    override fun onLayerDrawFinished(id: Int, percent: Float) {
+        
+    }
+
+    override fun onSingleTapUp(event: MotionEvent?) {
+        event?.let {
+            val tolerance = resources.displayMetrics.density * ConstantsUI.TOLERANCE_DP.toDouble()
+            val dMinX = event.x - tolerance
+            val dMaxX = event.x + tolerance
+            val dMinY = event.y - tolerance
+            val dMaxY = event.y + tolerance
+            val mapEnv = map?.screenToMap(GeoEnvelope(dMinX, dMaxX, dMinY, dMaxY)) ?: return
+
+            val types = GeoConstants.GTPointCheck
+            map?.getVectorLayersByType(types)?.let { layers ->
+                var items: List<Long>? = null
+                var selectedLayer: NGWVectorLayerUI? = null
+                for (layer in layers) {
+                    if (!layer.isValid || layer is ILayerView && !layer.isVisible)
+                        continue
+
+                    items = (layer as NGWVectorLayerUI).query(mapEnv)
+                    if (!items.isEmpty()) {
+                        selectedLayer = layer
+                        break
+                    }
+                }
+
+                selectedLayer?.let {
+                    for (i in items!!.indices) {
+                        val feature = selectedLayer.getFeature(items[i])
+                        feature?.geometry?.let { overlay.feature = feature }
+                    }
+
+                    overlay.feature?.let {
+                        findViewById<View>(R.id.info).visibility = View.VISIBLE
+                    }
+                }
+            }
+        }
+    }
+
+    private fun openCafe() {
+        val intent = Intent(this, CafeActivity::class.java)
+        startActivity(intent)
+    }
+
+    override fun onLayerAdded(id: Int) {
+        
+    }
+
+    override fun onLayerDeleted(id: Int) {
+        
+    }
+
+    override fun onLayerChanged(id: Int) {
+        
+    }
+
+    override fun onExtentChanged(zoom: Float, center: GeoPoint?) {
+        
+    }
+
+    override fun onLayerDrawStarted() {
+        
+    }
+
+    override fun onLongPress(event: MotionEvent?) {
+        
+    }
+
+    override fun panStart(e: MotionEvent?) {
+        
+    }
+
+    override fun panMoveTo(e: MotionEvent?) {
+        
+    }
+
+    override fun panStop() {
+        
     }
 
     companion object {
