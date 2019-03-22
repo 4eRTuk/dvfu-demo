@@ -65,6 +65,20 @@
                 android:layout_marginLeft="8dp"
                 style="@style/TextAppearance.AppCompat.Small"/>
 
+        <TextView
+                android:text="Отзывы"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:textColor="@color/color_black"
+                style="@style/TextAppearance.AppCompat.Small"/>
+
+        <android.support.v7.widget.RecyclerView
+                android:id="@+id/reviews"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                tools:listitem="@layout/item_review"/>
     </LinearLayout>
 
     <android.support.design.widget.FloatingActionButton

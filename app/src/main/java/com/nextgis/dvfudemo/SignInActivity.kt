@@ -185,6 +185,8 @@ class SignInActivity : AppCompatActivity() {
         shopStyle.setStyle("3", pharmacyStyle)
         shop.renderer = RuleFeatureRenderer(shop, shopStyle, groceryStyle)
         shop.save()
+        (map.getLayerByName(LAYERS[3].second) as VectorLayer).isVisible = false
+        (map.getLayerByName(LAYERS[4].second) as VectorLayer).isVisible = false
         signin()
     }
 
@@ -206,10 +208,13 @@ class SignInActivity : AppCompatActivity() {
     }
 
     companion object {
+        const val INSTANCE = "http://${MainActivity.AUTHORITY}/resource/"
         val LAYERS = arrayListOf(
-            Pair("http://dvfu-demo.nextgis.com/resource/4", "Магазины"),
-            Pair("http://dvfu-demo.nextgis.com/resource/5", "Вендинговые автоматы"),
-            Pair("http://dvfu-demo.nextgis.com/resource/6", "Кафе и рестораны")
+            Pair("$INSTANCE/7", "Магазины"),
+            Pair("$INSTANCE/8", "Вендинговые автоматы"),
+            Pair("$INSTANCE/13", "Кафе и рестораны"),
+            Pair("$INSTANCE/11", "Отзывы"),
+            Pair("$INSTANCE/12", "Заказы")
         )
         const val PERMISSIONS_CODE = 47
     }

@@ -25,13 +25,20 @@ import android.os.Bundle
 import android.support.design.widget.BottomSheetDialog
 import android.support.design.widget.FloatingActionButton
 import android.support.v7.app.AppCompatActivity
+import android.support.v7.widget.RecyclerView
 import android.widget.TextView
 import com.nextgis.maplib.api.IGISApplication
 import com.nextgis.maplib.map.MapDrawable
 import com.nextgis.maplib.map.VectorLayer
+import com.nextgis.maplibui.util.LayerUtil
+import android.content.Intent
+import android.net.Uri
+import android.support.v7.widget.LinearLayoutManager
+import android.view.View
 
 
 class CafeActivity : AppCompatActivity() {
+    private var phone: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -40,9 +47,38 @@ class CafeActivity : AppCompatActivity() {
         val layerId = intent.getIntExtra("layer_id", -1)
         val featureId = intent.getLongExtra("feature_id", -1)
         val app = application as? IGISApplication
+        ((app?.map as MapDrawable?)?.getLayerByName(SignInActivity.LAYERS[3].second) as? VectorLayer)?.let {
+            try {
+                val features = it.query(null, "facility_id = ?", arrayOf("$featureId"), null, null)
+                val items = arrayListOf<Review>()
+                if (features != null) {
+                    if (features.moveToFirst()) {
+                        val name = features.getColumnIndex("name")
+                        val date = features.getColumnIndex("date")
+                        val review = features.getColumnIndex("review")
+                        do {
+                            items.add(
+                                Review(
+                                    features.getString(name),
+                                    features.getString(date),
+                                    features.getString(review)
+                                )
+                            )
+                        } while (features.moveToNext())
+
+                        features.close()
+                    }
+                }
+                findViewById<RecyclerView>(R.id.reviews).adapter = ReviewAdapter(items)
+                findViewById<RecyclerView>(R.id.reviews).layoutManager = LinearLayoutManager(this)
+            } catch (e: Exception) {
+            }
+        }
+
         ((app?.map as MapDrawable?)?.getLayerById(layerId) as? VectorLayer)?.let {
-            it.getFeature(featureId)?.let {  feature ->
+            it.getFeature(featureId)?.let { feature ->
                 title = feature.getFieldValueAsString("title")
+                phone = feature.getFieldValueAsString("phone")
                 supportActionBar?.subtitle = feature.getFieldValueAsString("category")
                 findViewById<TextView>(R.id.description).text = feature.getFieldValueAsString("description")
                 findViewById<TextView>(R.id.menu).text = feature.getFieldValueAsString("menu")
@@ -61,17 +97,30 @@ class CafeActivity : AppCompatActivity() {
         val route = view.findViewById<TextView>(R.id.route)
         val order = view.findViewById<TextView>(R.id.order)
         review.setOnClickListener {
+            showForm(3)
             dialog.dismiss()
         }
+        if (phone.isBlank())
+            call.visibility = View.GONE
         call.setOnClickListener {
+            val callIntent = Intent(Intent.ACTION_DIAL)
+            callIntent.data = Uri.parse("tel:$phone")
+            startActivity(callIntent)
             dialog.dismiss()
         }
         route.setOnClickListener {
             dialog.dismiss()
         }
         order.setOnClickListener {
+            showForm(4)
             dialog.dismiss()
         }
         dialog.show()
+    }
+
+    private fun showForm(id: Int) {
+        val app = application as? IGISApplication
+        val orders = (app?.map as MapDrawable?)?.getLayerByName(SignInActivity.LAYERS[id].second)
+        LayerUtil.showEditForm(orders as VectorLayer?, this, -1L, null)
     }
 }
