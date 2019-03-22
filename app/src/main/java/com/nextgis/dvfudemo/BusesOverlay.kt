@@ -22,15 +22,16 @@
 package com.nextgis.dvfudemo
 
 import android.content.Context
-import android.graphics.BitmapFactory
-import android.graphics.Canvas
-import android.graphics.PointF
+import android.graphics.*
+import com.nextgis.maplib.datasource.GeoEnvelope
 import com.nextgis.maplib.map.MapDrawable
+import com.nextgis.maplib.util.GeoConstants
 import com.nextgis.maplibui.api.Overlay
 import com.nextgis.maplibui.api.OverlayItem
 import com.nextgis.maplibui.mapui.MapViewOverlays
 
 class BusesOverlay(context: Context, map: MapViewOverlays) : Overlay(context, map) {
+    var buses: MutableList<Bus> = arrayListOf()
     var items: MutableList<OverlayItem> = arrayListOf()
     val marker = BitmapFactory.decodeResource(mContext.resources, R.drawable.ic_bus_grey600_18dp)
 
@@ -51,4 +52,32 @@ class BusesOverlay(context: Context, map: MapViewOverlays) : Overlay(context, ma
             drawOnZooming(canvas, currentFocusLocation, scale, item, false)
         }
     }
+
+    fun defaultColor() {
+        for (item in items) {
+            item.marker = marker
+        }
+    }
+
+    fun selectBus(envelope: GeoEnvelope): Bus? {
+        for (i in 0 until items.size) {
+            if (envelope.contains(items[i].getCoordinates(GeoConstants.CRS_WEB_MERCATOR))) {
+                val marker = marker.copy(Bitmap.Config.ARGB_8888, true)
+                items[i].marker = applyColorFilter(marker)
+                mMapViewOverlays.postInvalidate()
+                return buses[i]
+            }
+        }
+        return null
+    }
+
+    private fun applyColorFilter(marker: Bitmap): Bitmap {
+        val canvas = Canvas(marker)
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+        val filter = PorterDuffColorFilter(Color.BLUE, PorterDuff.Mode.SRC_ATOP)
+        paint.colorFilter = filter
+        canvas.drawBitmap(marker, 0f, 0f, paint)
+        return marker
+    }
+
 }

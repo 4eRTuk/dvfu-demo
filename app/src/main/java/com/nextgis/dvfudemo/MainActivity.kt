@@ -65,6 +65,7 @@ class MainActivity : AppCompatActivity(), MapViewEventListener {
                 busesOverlay.items.clear()
                 for (bus in array) {
                     bus.location?.let { coordinates ->
+                        busesOverlay.buses.add(bus)
                         busesOverlay.items.add(OverlayItem(it, 0.0, 0.0, marker))
                         busesOverlay.items.last().setCoordinatesFromWGS(coordinates.longitude, coordinates.latitude)
                     }
@@ -107,6 +108,7 @@ class MainActivity : AppCompatActivity(), MapViewEventListener {
         findViewById<ImageButton>(R.id.close).setOnClickListener {
             findViewById<View>(R.id.info).visibility = View.GONE
             selectedOverlay.feature = null
+            busesOverlay.defaultColor()
         }
     }
 
@@ -250,6 +252,22 @@ class MainActivity : AppCompatActivity(), MapViewEventListener {
             val dMinY = event.y - tolerance
             val dMaxY = event.y + tolerance
             val mapEnv = map?.screenToMap(GeoEnvelope(dMinX, dMaxX, dMinY, dMaxY)) ?: return
+
+            if (busesOverlay.isVisible) {
+                busesOverlay.selectBus(mapEnv)?.let {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                        findViewById<ImageView>(R.id.avatar).imageTintList = ColorStateList.valueOf(Color.BLUE)
+                    }
+
+                    findViewById<View>(R.id.people).visibility = View.VISIBLE
+                    findViewById<ProgressBar>(R.id.people).progress = (it.congestion * 100).toInt()
+                    findViewById<TextView>(R.id.title).text = it.title
+                    findViewById<TextView>(R.id.category).text = ""
+                    findViewById<TextView>(R.id.description).text = "Остановки:\n#1\n#2\n...\nЗаполненность:"
+                    findViewById<View>(R.id.info).visibility = View.VISIBLE
+                    return
+                }
+            }
 
             val types = GeoConstants.GTPointCheck
             map?.getVectorLayersByType(types)?.let { layers ->
