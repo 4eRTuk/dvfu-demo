@@ -55,7 +55,8 @@ import com.nextgis.maplibui.util.SettingsConstantsUI
 
 class MainActivity : AppCompatActivity(), MapViewEventListener {
     private var map: MapViewOverlays? = null
-    private lateinit var overlay: SelectFeatureOverlay
+    private lateinit var selectedOverlay: SelectFeatureOverlay
+    private lateinit var busesOverlay: BusesOverlay
     private var preferences: SharedPreferences? = null
     private var authorized = false
 
@@ -74,8 +75,10 @@ class MainActivity : AppCompatActivity(), MapViewEventListener {
         val app = application as? IGISApplication
         map = MapViewOverlays(this, app?.map as MapDrawable?)
         map?.id = R.id.map
-        overlay = SelectFeatureOverlay(this, map!!)
-        map?.addOverlay(overlay)
+        selectedOverlay = SelectFeatureOverlay(this, map!!)
+        busesOverlay = BusesOverlay(this, map!!)
+        map?.addOverlay(selectedOverlay)
+        map?.addOverlay(busesOverlay)
         if (!authorized) {
             (map?.map?.getLayerByName(SignInActivity.LAYERS[2].second) as? VectorLayer)?.let {
                 it.isVisible = false
@@ -88,7 +91,7 @@ class MainActivity : AppCompatActivity(), MapViewEventListener {
 
         findViewById<ImageButton>(R.id.close).setOnClickListener {
             findViewById<View>(R.id.info).visibility = View.GONE
-            overlay.feature = null
+            selectedOverlay.feature = null
         }
     }
 
@@ -136,10 +139,11 @@ class MainActivity : AppCompatActivity(), MapViewEventListener {
             R.id.action_layers -> {
                 val app = application as? IGISApplication
                 val map = app?.map as MapDrawable?
-                val layers = arrayOf("Магазины и автоматы", "Кафе и рестораны")
+                val layers = arrayOf("Магазины и автоматы", "Кафе и рестораны", "Автобусы")
                 val checked = BooleanArray(layers.size)
                 (map?.getLayerByName(SignInActivity.LAYERS[0].second) as Layer).let { checked[0] = it.isVisible }
                 (map.getLayerByName(SignInActivity.LAYERS[2].second) as Layer).let { checked[1] = it.isVisible }
+                checked[2] = busesOverlay.isVisible
                 val builder = AlertDialog.Builder(this)
                 builder.setTitle(R.string.track_list)
                     .setMultiChoiceItems(layers, checked) { _, which, selected -> checked[which] = selected }
@@ -147,6 +151,7 @@ class MainActivity : AppCompatActivity(), MapViewEventListener {
                         (map.getLayerByName(SignInActivity.LAYERS[0].second) as Layer).let { it.isVisible = checked[0] }
                         (map.getLayerByName(SignInActivity.LAYERS[1].second) as Layer).let { it.isVisible = checked[0] }
                         (map.getLayerByName(SignInActivity.LAYERS[2].second) as Layer).let { it.isVisible = checked[1] }
+                        busesOverlay.setVisibility(checked[2])
                     }
                 if (!authorized) {
                     builder.setNegativeButton("Войти", null)
@@ -225,18 +230,15 @@ class MainActivity : AppCompatActivity(), MapViewEventListener {
                                 openCafe(selectedLayer.id, feature.id)
                                 return
                             }
-                            it.geometry?.let { overlay.feature = feature }
+                            it.geometry?.let { selectedOverlay.feature = feature }
 
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                                 val cat = feature.getFieldValueAsInteger("category_id")
-                                if (cat == 1) {
-                                    findViewById<ImageView>(R.id.avatar).imageTintList = ColorStateList.valueOf(Color.CYAN)
-                                } else if (cat == 2) {
-                                    findViewById<ImageView>(R.id.avatar).imageTintList = ColorStateList.valueOf(Color.GREEN)
-                                } else if (cat == 3) {
-                                    findViewById<ImageView>(R.id.avatar).imageTintList = ColorStateList.valueOf(Color.RED)
-                                } else {
-                                    findViewById<ImageView>(R.id.avatar).imageTintList = ColorStateList.valueOf(Color.MAGENTA)
+                                when (cat) {
+                                    1 -> findViewById<ImageView>(R.id.avatar).imageTintList = ColorStateList.valueOf(Color.CYAN)
+                                    2 -> findViewById<ImageView>(R.id.avatar).imageTintList = ColorStateList.valueOf(Color.GREEN)
+                                    3 -> findViewById<ImageView>(R.id.avatar).imageTintList = ColorStateList.valueOf(Color.RED)
+                                    else -> findViewById<ImageView>(R.id.avatar).imageTintList = ColorStateList.valueOf(Color.MAGENTA)
                                 }
                             }
 
@@ -247,7 +249,7 @@ class MainActivity : AppCompatActivity(), MapViewEventListener {
                         }
                     }
 
-                    overlay.feature?.let {
+                    selectedOverlay.feature?.let {
                         findViewById<View>(R.id.info).visibility = View.VISIBLE
                     }
                 }
