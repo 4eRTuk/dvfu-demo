@@ -28,6 +28,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
 import android.preference.PreferenceManager
@@ -37,10 +38,16 @@ import android.support.v7.app.AppCompatActivity
 import android.widget.Button
 import android.widget.Toast
 import com.nextgis.maplib.api.IGISApplication
+import com.nextgis.maplib.display.FieldStyleRule
+import com.nextgis.maplib.display.RuleFeatureRenderer
+import com.nextgis.maplib.display.SimpleFeatureRenderer
+import com.nextgis.maplib.display.SimpleMarkerStyle
 import com.nextgis.maplib.map.MapDrawable
+import com.nextgis.maplib.map.VectorLayer
 import com.nextgis.maplib.util.Constants
 import com.nextgis.maplib.util.PermissionUtil
 import com.nextgis.maplibui.service.LayerFillService
+import java.lang.Exception
 
 class SignInActivity : AppCompatActivity() {
     private var receiver: BroadcastReceiver? = null
@@ -78,7 +85,8 @@ class SignInActivity : AppCompatActivity() {
     private fun load(authorized: Boolean = false) {
         this.authorized = authorized
         if (!PermissionUtil.hasPermission(this, Manifest.permission.WRITE_SYNC_SETTINGS)
-            || !PermissionUtil.hasPermission(this, Manifest.permission.GET_ACCOUNTS)) {
+            || !PermissionUtil.hasPermission(this, Manifest.permission.GET_ACCOUNTS)
+        ) {
             requestPermission()
             return
         }
@@ -124,7 +132,7 @@ class SignInActivity : AppCompatActivity() {
                     LayerFillService.STATUS_STOP -> {
                         total--
                         if (total <= 0)
-                            signin()
+                            style()
                     }
                 }
             }
@@ -154,6 +162,32 @@ class SignInActivity : AppCompatActivity() {
         }
     }
 
+    private fun style() {
+        val style = SimpleMarkerStyle.MarkerStyleCircle
+        val cafeStyle = SimpleMarkerStyle(MainActivity.CAFE_COLOR, Color.BLACK, 6f, style)
+        val app = application as? DVFUApplication
+        val map = app?.map as MapDrawable
+        val cafe = map.getLayerByName(LAYERS[2].second) as VectorLayer
+        cafe.renderer = SimpleFeatureRenderer(cafe, cafeStyle)
+        cafe.save()
+        val vendingStyle = SimpleMarkerStyle(MainActivity.VENDING_COLOR, Color.BLACK, 5f, style)
+        val vending= map.getLayerByName(LAYERS[1].second) as VectorLayer
+        vending.renderer = SimpleFeatureRenderer(vending, vendingStyle)
+        vending.save()
+        val shop= map.getLayerByName(LAYERS[0].second) as VectorLayer
+        val shopStyle = FieldStyleRule(shop)
+        shopStyle.key = "category_id"
+        val groceryStyle = SimpleMarkerStyle(MainActivity.GROCERY_COLOR, Color.BLACK, 5f, style)
+        shopStyle.setStyle("1", groceryStyle)
+        val supermarketStyle = SimpleMarkerStyle(MainActivity.SUPERMARKET_COLOR, Color.BLACK, 5f, style)
+        shopStyle.setStyle("2", supermarketStyle)
+        val pharmacyStyle = SimpleMarkerStyle(MainActivity.PHARMACY_COLOR, Color.BLACK, 5f, style)
+        shopStyle.setStyle("3", pharmacyStyle)
+        shop.renderer = RuleFeatureRenderer(shop, shopStyle, groceryStyle)
+        shop.save()
+        signin()
+    }
+
     private fun signin() {
         val preferences = PreferenceManager.getDefaultSharedPreferences(this)
         preferences.edit().putBoolean("authorized", authorized).apply()
@@ -161,6 +195,14 @@ class SignInActivity : AppCompatActivity() {
         val intent = Intent(this, MainActivity::class.java)
         startActivity(intent)
         finish()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        try {
+            receiver?.let { unregisterReceiver(it) }
+        } catch (e: Exception) {
+        }
     }
 
     companion object {

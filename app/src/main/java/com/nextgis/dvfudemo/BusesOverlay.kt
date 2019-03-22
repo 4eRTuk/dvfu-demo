@@ -74,7 +74,7 @@ class BusesOverlay(context: Context, map: MapViewOverlays) : Overlay(context, ma
     private fun applyColorFilter(marker: Bitmap): Bitmap {
         val canvas = Canvas(marker)
         val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-        val filter = PorterDuffColorFilter(Color.BLUE, PorterDuff.Mode.SRC_ATOP)
+        val filter = PorterDuffColorFilter(MainActivity.BUS_COLOR, PorterDuff.Mode.SRC_ATOP)
         paint.colorFilter = filter
         canvas.drawBitmap(marker, 0f, 0f, paint)
         return marker

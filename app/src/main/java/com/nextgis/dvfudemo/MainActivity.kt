@@ -256,7 +256,7 @@ class MainActivity : AppCompatActivity(), MapViewEventListener {
             if (busesOverlay.isVisible) {
                 busesOverlay.selectBus(mapEnv)?.let {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                        findViewById<ImageView>(R.id.avatar).imageTintList = ColorStateList.valueOf(Color.BLUE)
+                        findViewById<ImageView>(R.id.avatar).imageTintList = ColorStateList.valueOf(BUS_COLOR)
                     }
 
                     findViewById<View>(R.id.people).visibility = View.VISIBLE
@@ -265,6 +265,16 @@ class MainActivity : AppCompatActivity(), MapViewEventListener {
                     findViewById<TextView>(R.id.category).text = ""
                     findViewById<TextView>(R.id.description).text = "Остановки:\n#1\n#2\n...\nЗаполненность:"
                     findViewById<View>(R.id.info).visibility = View.VISIBLE
+
+                    map?.let { map ->
+                        it.location?.let { location ->
+                            val center = GeoPoint(location.longitude, location.latitude)
+                            center.crs = GeoConstants.CRS_WGS84
+                            center.project(GeoConstants.CRS_WEB_MERCATOR)
+                            center.y -= 1000
+                            map.setZoomAndCenter(map.zoomLevel, center)
+                        }
+                    }
                     return
                 }
             }
@@ -298,13 +308,13 @@ class MainActivity : AppCompatActivity(), MapViewEventListener {
                                 val cat = feature.getFieldValueAsInteger("category_id")
                                 when (cat) {
                                     1 -> findViewById<ImageView>(R.id.avatar).imageTintList =
-                                        ColorStateList.valueOf(Color.CYAN)
+                                        ColorStateList.valueOf(GROCERY_COLOR)
                                     2 -> findViewById<ImageView>(R.id.avatar).imageTintList =
-                                        ColorStateList.valueOf(Color.GREEN)
+                                        ColorStateList.valueOf(SUPERMARKET_COLOR)
                                     3 -> findViewById<ImageView>(R.id.avatar).imageTintList =
-                                        ColorStateList.valueOf(Color.RED)
+                                        ColorStateList.valueOf(PHARMACY_COLOR)
                                     else -> findViewById<ImageView>(R.id.avatar).imageTintList =
-                                        ColorStateList.valueOf(Color.MAGENTA)
+                                        ColorStateList.valueOf(VENDING_COLOR)
                                 }
                             }
 
@@ -369,5 +379,11 @@ class MainActivity : AppCompatActivity(), MapViewEventListener {
     companion object {
         const val AUTHORITY = "dvfu-demo.nextgis.com"
         const val FULL_URL = "http://$AUTHORITY"
+        val CAFE_COLOR = Color.parseColor("#76B952")
+        val GROCERY_COLOR = Color.parseColor("#9A23BB")
+        val SUPERMARKET_COLOR = Color.parseColor("#BA1290")
+        val PHARMACY_COLOR = Color.parseColor("#B20023")
+        val VENDING_COLOR = Color.parseColor("#542BAD")
+        val BUS_COLOR = Color.parseColor("#51D3FF")
     }
 }
