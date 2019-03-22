@@ -21,8 +21,7 @@
 
 package com.nextgis.dvfudemo
 
-import android.content.Intent
-import android.content.SharedPreferences
+import android.content.*
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.os.Build
@@ -34,10 +33,7 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.MotionEvent
 import android.view.View
-import android.widget.FrameLayout
-import android.widget.ImageButton
-import android.widget.ImageView
-import android.widget.TextView
+import android.widget.*
 import com.nextgis.maplib.api.IGISApplication
 import com.nextgis.maplib.api.ILayerView
 import com.nextgis.maplib.datasource.GeoEnvelope
@@ -47,10 +43,12 @@ import com.nextgis.maplib.map.MapDrawable
 import com.nextgis.maplib.map.VectorLayer
 import com.nextgis.maplib.util.GeoConstants
 import com.nextgis.maplibui.api.MapViewEventListener
+import com.nextgis.maplibui.api.OverlayItem
 import com.nextgis.maplibui.mapui.MapViewOverlays
 import com.nextgis.maplibui.mapui.NGWVectorLayerUI
 import com.nextgis.maplibui.util.ConstantsUI
 import com.nextgis.maplibui.util.SettingsConstantsUI
+import java.lang.Exception
 
 
 class MainActivity : AppCompatActivity(), MapViewEventListener {
@@ -59,6 +57,22 @@ class MainActivity : AppCompatActivity(), MapViewEventListener {
     private lateinit var busesOverlay: BusesOverlay
     private var preferences: SharedPreferences? = null
     private var authorized = false
+    private var receiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            map?.map?.let {
+                val array = intent.getParcelableArrayListExtra<Bus>("buses")
+                val marker = busesOverlay.marker
+                busesOverlay.items.clear()
+                for (bus in array) {
+                    bus.location?.let { coordinates ->
+                        busesOverlay.items.add(OverlayItem(it, 0.0, 0.0, marker))
+                        busesOverlay.items.last().setCoordinatesFromWGS(coordinates.longitude, coordinates.latitude)
+                    }
+                }
+                map?.postInvalidate()
+            }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -83,6 +97,7 @@ class MainActivity : AppCompatActivity(), MapViewEventListener {
             (map?.map?.getLayerByName(SignInActivity.LAYERS[2].second) as? VectorLayer)?.let {
                 it.isVisible = false
             }
+            busesOverlay.setVisibility(false)
         }
 
         val container = findViewById<FrameLayout>(R.id.map)
@@ -151,7 +166,13 @@ class MainActivity : AppCompatActivity(), MapViewEventListener {
                         (map.getLayerByName(SignInActivity.LAYERS[0].second) as Layer).let { it.isVisible = checked[0] }
                         (map.getLayerByName(SignInActivity.LAYERS[1].second) as Layer).let { it.isVisible = checked[0] }
                         (map.getLayerByName(SignInActivity.LAYERS[2].second) as Layer).let { it.isVisible = checked[1] }
+
                         busesOverlay.setVisibility(checked[2])
+                        if (!busesOverlay.isVisible) {
+                            stopBusesService()
+                        } else {
+                            startBusesService()
+                        }
                     }
                 if (!authorized) {
                     builder.setNegativeButton("Войти", null)
@@ -176,6 +197,17 @@ class MainActivity : AppCompatActivity(), MapViewEventListener {
     override fun onStart() {
         super.onStart()
         map?.addListener(this)
+
+        startBusesService()
+    }
+
+    private fun startBusesService() {
+        if (busesOverlay.isVisible) {
+            val intentFilter = IntentFilter("BUSES_UPDATE")
+            registerReceiver(receiver, intentFilter)
+            val intent = Intent(this, BusesService::class.java)
+            startService(intent)
+        }
     }
 
     override fun onStop() {
@@ -188,14 +220,26 @@ class MainActivity : AppCompatActivity(), MapViewEventListener {
                 ?.putLong(SettingsConstantsUI.KEY_PREF_SCROLL_Y, java.lang.Double.doubleToRawLongBits(point.y))
                 ?.apply()
         }
+
+        stopBusesService()
+    }
+
+    private fun stopBusesService() {
+        val intent = Intent(this, BusesService::class.java)
+        stopService(intent)
+
+        try {
+            unregisterReceiver(receiver)
+        } catch (e: Exception) {
+        }
     }
 
     override fun onLayersReordered() {
-        
+
     }
 
     override fun onLayerDrawFinished(id: Int, percent: Float) {
-        
+
     }
 
     override fun onSingleTapUp(event: MotionEvent?) {
@@ -235,10 +279,14 @@ class MainActivity : AppCompatActivity(), MapViewEventListener {
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                                 val cat = feature.getFieldValueAsInteger("category_id")
                                 when (cat) {
-                                    1 -> findViewById<ImageView>(R.id.avatar).imageTintList = ColorStateList.valueOf(Color.CYAN)
-                                    2 -> findViewById<ImageView>(R.id.avatar).imageTintList = ColorStateList.valueOf(Color.GREEN)
-                                    3 -> findViewById<ImageView>(R.id.avatar).imageTintList = ColorStateList.valueOf(Color.RED)
-                                    else -> findViewById<ImageView>(R.id.avatar).imageTintList = ColorStateList.valueOf(Color.MAGENTA)
+                                    1 -> findViewById<ImageView>(R.id.avatar).imageTintList =
+                                        ColorStateList.valueOf(Color.CYAN)
+                                    2 -> findViewById<ImageView>(R.id.avatar).imageTintList =
+                                        ColorStateList.valueOf(Color.GREEN)
+                                    3 -> findViewById<ImageView>(R.id.avatar).imageTintList =
+                                        ColorStateList.valueOf(Color.RED)
+                                    else -> findViewById<ImageView>(R.id.avatar).imageTintList =
+                                        ColorStateList.valueOf(Color.MAGENTA)
                                 }
                             }
 
@@ -265,39 +313,39 @@ class MainActivity : AppCompatActivity(), MapViewEventListener {
     }
 
     override fun onLayerAdded(id: Int) {
-        
+
     }
 
     override fun onLayerDeleted(id: Int) {
-        
+
     }
 
     override fun onLayerChanged(id: Int) {
-        
+
     }
 
     override fun onExtentChanged(zoom: Float, center: GeoPoint?) {
-        
+
     }
 
     override fun onLayerDrawStarted() {
-        
+
     }
 
     override fun onLongPress(event: MotionEvent?) {
-        
+
     }
 
     override fun panStart(e: MotionEvent?) {
-        
+
     }
 
     override fun panMoveTo(e: MotionEvent?) {
-        
+
     }
 
     override fun panStop() {
-        
+
     }
 
     companion object {

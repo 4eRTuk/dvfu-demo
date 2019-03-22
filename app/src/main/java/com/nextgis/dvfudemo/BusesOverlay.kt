@@ -25,24 +25,17 @@ import android.content.Context
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.PointF
-import com.nextgis.maplib.datasource.GeoPoint
 import com.nextgis.maplib.map.MapDrawable
 import com.nextgis.maplibui.api.Overlay
 import com.nextgis.maplibui.api.OverlayItem
 import com.nextgis.maplibui.mapui.MapViewOverlays
 
 class BusesOverlay(context: Context, map: MapViewOverlays) : Overlay(context, map) {
-    private var items: MutableList<OverlayItem> = arrayListOf()
-    private val marker = BitmapFactory.decodeResource(mContext.resources, R.drawable.ic_bus_grey600_18dp)
-
-    init {
-        items.add(OverlayItem(mMapViewOverlays.map, coordinates[0].x, coordinates[0].y, marker))
-        items.add(OverlayItem(mMapViewOverlays.map, coordinates[1].x, coordinates[1].y, marker))
-    }
+    var items: MutableList<OverlayItem> = arrayListOf()
+    val marker = BitmapFactory.decodeResource(mContext.resources, R.drawable.ic_bus_grey600_18dp)
 
     override fun draw(canvas: Canvas?, mapDrawable: MapDrawable?) {
         for (i in 0 until items.size) {
-            items[i].setCoordinatesFromWGS(coordinates[i].x, coordinates[i].y)
             drawOverlayItem(canvas, items[i])
         }
     }
@@ -57,9 +50,5 @@ class BusesOverlay(context: Context, map: MapViewOverlays) : Overlay(context, ma
         for (item in items) {
             drawOnZooming(canvas, currentFocusLocation, scale, item, false)
         }
-    }
-
-    companion object {
-        val coordinates = arrayListOf(GeoPoint(131.890756, 43.033386), GeoPoint(131.889368, 43.025636))
     }
 }
