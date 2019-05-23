@@ -21,14 +21,15 @@
 
 package com.nextgis.dvfudemo
 
+import android.accounts.AccountManager
 import android.content.*
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.os.Build
-import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.preference.PreferenceManager
 import android.support.v7.app.AlertDialog
+import android.support.v7.app.AppCompatActivity
 import android.view.Menu
 import android.view.MenuItem
 import android.view.MotionEvent
@@ -44,11 +45,11 @@ import com.nextgis.maplib.map.VectorLayer
 import com.nextgis.maplib.util.GeoConstants
 import com.nextgis.maplibui.api.MapViewEventListener
 import com.nextgis.maplibui.api.OverlayItem
+import com.nextgis.maplibui.fragment.NGWSettingsFragment
 import com.nextgis.maplibui.mapui.MapViewOverlays
 import com.nextgis.maplibui.mapui.NGWVectorLayerUI
 import com.nextgis.maplibui.util.ConstantsUI
 import com.nextgis.maplibui.util.SettingsConstantsUI
-import java.lang.Exception
 
 
 class MainActivity : AppCompatActivity(), MapViewEventListener {
@@ -109,6 +110,24 @@ class MainActivity : AppCompatActivity(), MapViewEventListener {
             findViewById<View>(R.id.info).visibility = View.GONE
             selectedOverlay.feature = null
             busesOverlay.defaultColor()
+        }
+
+        sync()
+    }
+
+    private fun sync() {
+        AccountManager.get(this)?.let { manager ->
+            (application as? IGISApplication)?.let { app ->
+                manager.getAccountsByType(app.accountsType).firstOrNull()?.let { account ->
+                    val syncEnabled = NGWSettingsFragment.isAccountSyncEnabled(account, app.authority)
+                    if (syncEnabled) {
+                        val settings = Bundle()
+                        settings.putBoolean(ContentResolver.SYNC_EXTRAS_MANUAL, true)
+                        settings.putBoolean(ContentResolver.SYNC_EXTRAS_EXPEDITED, true)
+                        ContentResolver.requestSync(account, app.authority, settings)
+                    }
+                }
+            }
         }
     }
 

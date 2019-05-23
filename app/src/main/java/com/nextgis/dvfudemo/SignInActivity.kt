@@ -43,9 +43,11 @@ import com.nextgis.maplib.display.RuleFeatureRenderer
 import com.nextgis.maplib.display.SimpleFeatureRenderer
 import com.nextgis.maplib.display.SimpleMarkerStyle
 import com.nextgis.maplib.map.MapDrawable
+import com.nextgis.maplib.map.NGWVectorLayer
 import com.nextgis.maplib.map.VectorLayer
 import com.nextgis.maplib.util.Constants
 import com.nextgis.maplib.util.PermissionUtil
+import com.nextgis.maplibui.fragment.NGWSettingsFragment
 import com.nextgis.maplibui.service.LayerFillService
 import java.lang.Exception
 
@@ -103,10 +105,13 @@ class SignInActivity : AppCompatActivity() {
         app?.addAccount(accountName, fullUrl, Constants.NGW_ACCOUNT_GUEST, null, "ngw")?.let {
             if (!it) {
                 Toast.makeText(this, R.string.error_auth, Toast.LENGTH_SHORT).show()
-                app.getAccount(accountName)?.let { app.removeAccount(it) }
+                app.getAccount(accountName)?.let { account -> app.removeAccount(account) }
                 dialog?.dismiss()
                 return
             } else {
+                app.getAccount(accountName)?.let { account ->
+                    NGWSettingsFragment.setAccountSyncEnabled(account, app.authority, true)
+                }
                 layers()
             }
         }
@@ -167,14 +172,17 @@ class SignInActivity : AppCompatActivity() {
         val cafeStyle = SimpleMarkerStyle(MainActivity.CAFE_COLOR, Color.BLACK, 6f, style)
         val app = application as? DVFUApplication
         val map = app?.map as MapDrawable
-        val cafe = map.getLayerByName(LAYERS[2].second) as VectorLayer
+        val cafe = map.getLayerByName(LAYERS[2].second) as NGWVectorLayer
+        cafe.syncType = Constants.SYNC_ALL
         cafe.renderer = SimpleFeatureRenderer(cafe, cafeStyle)
         cafe.save()
         val vendingStyle = SimpleMarkerStyle(MainActivity.VENDING_COLOR, Color.BLACK, 5f, style)
-        val vending= map.getLayerByName(LAYERS[1].second) as VectorLayer
+        val vending= map.getLayerByName(LAYERS[1].second) as NGWVectorLayer
+        vending.syncType = Constants.SYNC_ALL
         vending.renderer = SimpleFeatureRenderer(vending, vendingStyle)
         vending.save()
-        val shop= map.getLayerByName(LAYERS[0].second) as VectorLayer
+        val shop= map.getLayerByName(LAYERS[0].second) as NGWVectorLayer
+        shop.syncType = Constants.SYNC_ALL
         val shopStyle = FieldStyleRule(shop)
         shopStyle.key = "category_id"
         val groceryStyle = SimpleMarkerStyle(MainActivity.GROCERY_COLOR, Color.BLACK, 5f, style)
